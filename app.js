@@ -38,7 +38,7 @@ const COUNTRIES = [
   { name: "Colombia", iso: "co", code: "COL" },
   { name: "Comoros", iso: "km", code: "COM" },
   { name: "Congo", iso: "cg", code: "CGO", aliases: ["Republic of the Congo"] },
-  { name: "DR Congo", iso: "cd", code: "COD", aliases: ["Congo", "Congo DR", "Democratic Republic of the Congo", "Democratic Republic of Congo"] },
+  { name: "DR Congo", iso: "cd", code: "COD", aliases: ["Democratic Republic of the Congo", "Democratic Republic of Congo"] },
   { name: "Costa Rica", iso: "cr", code: "CRC" },
   { name: "Cote d'Ivoire", iso: "ci", code: "CIV", aliases: ["Ivory Coast", "Cote d Ivoire"] },
   { name: "Croatia", iso: "hr", code: "CRO" },
@@ -215,11 +215,22 @@ const rows = [
   ["Clear", "Space", "Enter"],
 ];
 
+const FLAG_CACHE_NAME = "flag-game-flags-v1";
+
 const els = {
   resolvedName: document.querySelector("#resolvedName"),
   flagImage: document.querySelector("#flagImage"),
   hintBadge: document.querySelector("#hintBadge"),
   celebrationCanvas: document.querySelector("#celebrationCanvas"),
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsPanel: document.querySelector("#settingsPanel"),
+  showAllButton: document.querySelector("#showAllButton"),
+  settingsResetButton: document.querySelector("#settingsResetButton"),
+  allCountriesOverlay: document.querySelector("#allCountriesOverlay"),
+  allCountriesList: document.querySelector("#allCountriesList"),
+  allCountriesCloseButton: document.querySelector("#allCountriesCloseButton"),
+  countryModeInputs: document.querySelectorAll("input[name='countryMode']"),
+  hintModeInputs: document.querySelectorAll("input[name='hintMode']"),
   backButton: document.querySelector("#backButton"),
   scoreButton: document.querySelector("#scoreButton"),
   hintButton: document.querySelector("#hintButton"),
@@ -228,9 +239,6 @@ const els = {
   wrongOverlay: document.querySelector("#wrongOverlay"),
   showButton: document.querySelector("#showButton"),
   againButton: document.querySelector("#againButton"),
-  resetOverlay: document.querySelector("#resetOverlay"),
-  cancelResetButton: document.querySelector("#cancelResetButton"),
-  confirmResetButton: document.querySelector("#confirmResetButton"),
 };
 
 let deck = [];
@@ -243,6 +251,10 @@ let answerTimer = 0;
 let hintTimer = 0;
 let celebrationFrame = 0;
 let audioContext = null;
+let settings = {
+  countryMode: "worldCup",
+  hintMode: "firstLetter",
+};
 
 const preparedCountries = COUNTRIES.map((country) => ({
   ...country,
@@ -275,9 +287,26 @@ function shuffle(items) {
 }
 
 function refillDeck() {
-  const worldCup = preparedCountries.filter((country) => country.worldCup);
-  const rest = preparedCountries.filter((country) => !country.worldCup);
-  deck = [...shuffle(worldCup), ...shuffle(rest)];
+  deck = shuffle(activeCountries());
+}
+
+function activeCountries() {
+  if (settings.countryMode === "worldCup") {
+    return preparedCountries.filter((country) => country.worldCup);
+  }
+
+  return preparedCountries;
+}
+
+function changeCountryMode(mode) {
+  if (settings.countryMode === mode) return;
+  settings.countryMode = mode;
+  deck = [];
+  history = [];
+  current = null;
+  clearGuess();
+  nextCountry();
+  if (isAllCountriesOpen()) renderAllCountries();
 }
 
 function nextCountry() {
@@ -317,7 +346,11 @@ function previousCountry() {
 function loadFlag() {
   els.flagImage.classList.remove("is-loaded");
   els.flagImage.alt = "Mystery country flag";
-  els.flagImage.src = `https://flagcdn.com/${current.iso}.svg`;
+  els.flagImage.src = flagUrl(current);
+}
+
+function flagUrl(country) {
+  return `https://flagcdn.com/${country.iso}.svg`;
 }
 
 function resolveGuess(value, allowPrefix = true) {
@@ -328,17 +361,16 @@ function resolveGuess(value, allowPrefix = true) {
   const byPrefixRankThenName = (left, right) => (
     prefixRank(left, normalized) - prefixRank(right, normalized) || byName(left, right)
   );
-  const exactNameMatches = preparedCountries.filter((country) => {
+  const countries = activeCountries();
+  const exactNameMatches = countries.filter((country) => {
     const names = [country.name, ...(country.aliases || [])].map(normalize);
     return names.includes(normalized);
   }).sort(byName);
-  const exactCodeMatches = preparedCountries.filter((country) => (
+  const exactCodeMatches = countries.filter((country) => (
     normalize(country.code) === normalized
   )).sort(byName);
 
   if (exactNameMatches.length) {
-    const exactCurrent = exactNameMatches.find((country) => country.code === current?.code);
-    if (exactCurrent) return { country: exactCurrent, status: "exact" };
     return { country: exactNameMatches[0], status: "exact" };
   }
 
@@ -349,7 +381,7 @@ function resolveGuess(value, allowPrefix = true) {
 
   if (!allowPrefix) return { country: null, status: "none" };
 
-  const prefixMatches = preparedCountries.filter((country) => (
+  const prefixMatches = countries.filter((country) => (
     country.tokens.some((token) => token.startsWith(normalized))
   )).sort(byPrefixRankThenName);
 
@@ -409,7 +441,7 @@ function fitResolverText() {
 }
 
 function typeCharacter(character) {
-  if (els.wrongOverlay.hidden === false || els.resetOverlay.hidden === false) return;
+  if (isInputBlocked()) return;
   window.clearTimeout(answerTimer);
   guess += character;
   updateResolver();
@@ -417,7 +449,7 @@ function typeCharacter(character) {
 }
 
 function backspace() {
-  if (els.wrongOverlay.hidden === false || els.resetOverlay.hidden === false) return;
+  if (isInputBlocked()) return;
   guess = guess.slice(0, -1);
   updateResolver();
   updateEnterKeys();
@@ -430,7 +462,7 @@ function clearGuess() {
 }
 
 function submitGuess() {
-  if (!guess.trim() || els.wrongOverlay.hidden === false || els.resetOverlay.hidden === false) return;
+  if (!guess.trim() || isInputBlocked()) return;
   const result = resolveGuess(guess, true);
 
   if (result.country && result.country.code === current.code) {
@@ -476,7 +508,7 @@ function hideAnswer() {
 
 function showHint() {
   window.clearTimeout(hintTimer);
-  els.hintBadge.textContent = current.code;
+  els.hintBadge.textContent = hintText();
   els.hintBadge.setAttribute("aria-hidden", "false");
   els.hintBadge.classList.add("is-visible");
   hintTimer = window.setTimeout(hideHint, 1000);
@@ -490,14 +522,120 @@ function hideHint() {
 
 function updateScore() {
   els.scoreButton.textContent = `${right}/${right + wrong}`;
-  els.scoreButton.setAttribute("aria-label", `Score ${right} right out of ${right + wrong}. Reset score.`);
+  els.scoreButton.setAttribute("aria-label", `Score ${right} right out of ${right + wrong}`);
 }
 
 function resetScore() {
   right = 0;
   wrong = 0;
   updateScore();
-  els.resetOverlay.hidden = true;
+}
+
+function startNewGame() {
+  resetScore();
+  deck = [];
+  history = [];
+  current = null;
+  guess = "";
+  hideAnswer();
+  hideHint();
+  closeSettings();
+  nextCountry();
+}
+
+function hintText() {
+  if (settings.hintMode === "firstLetter") {
+    return current.name.slice(0, 1).toUpperCase();
+  }
+
+  if (settings.hintMode === "twoLetter") {
+    return twoLetterCode(current);
+  }
+
+  return current.code;
+}
+
+function twoLetterCode(country) {
+  return /^[a-z]{2}$/.test(country.iso) ? country.iso.toUpperCase() : country.code.slice(0, 2);
+}
+
+function sortedActiveCountries() {
+  return [...activeCountries()].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function isSettingsOpen() {
+  return els.settingsPanel.hidden === false;
+}
+
+function isAllCountriesOpen() {
+  return els.allCountriesOverlay.hidden === false;
+}
+
+function isInputBlocked() {
+  return els.wrongOverlay.hidden === false || isSettingsOpen() || isAllCountriesOpen();
+}
+
+function openSettings() {
+  els.settingsPanel.hidden = false;
+  els.settingsButton.setAttribute("aria-expanded", "true");
+}
+
+function closeSettings() {
+  els.settingsPanel.hidden = true;
+  els.settingsButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleSettings() {
+  if (isSettingsOpen()) {
+    closeSettings();
+  } else {
+    openSettings();
+  }
+}
+
+function showAllCountries() {
+  closeSettings();
+  renderAllCountries();
+  els.allCountriesOverlay.hidden = false;
+}
+
+function closeAllCountries() {
+  els.allCountriesOverlay.hidden = true;
+}
+
+function renderAllCountries() {
+  const fragment = document.createDocumentFragment();
+
+  sortedActiveCountries().forEach((country) => {
+    const row = document.createElement("article");
+    row.className = "country-row";
+
+    const flagCell = document.createElement("div");
+    flagCell.className = "country-row-flag";
+
+    const flag = document.createElement("img");
+    flag.loading = "lazy";
+    flag.alt = `${country.name} flag`;
+    flag.src = flagUrl(country);
+    flagCell.append(flag);
+
+    const infoCell = document.createElement("div");
+    infoCell.className = "country-row-info";
+
+    const name = document.createElement("div");
+    name.className = "country-row-name";
+    name.textContent = country.name;
+
+    const codes = document.createElement("div");
+    codes.className = "country-row-codes";
+    codes.textContent = `${twoLetterCode(country)} / ${country.code}`;
+
+    infoCell.append(name, codes);
+    row.append(flagCell, infoCell);
+    fragment.append(row);
+  });
+
+  els.allCountriesList.replaceChildren(fragment);
 }
 
 function updateEnterKeys() {
@@ -542,6 +680,7 @@ function buildKeyboard() {
 }
 
 function handleVirtualKey(key) {
+  if (isSettingsOpen() || isAllCountriesOpen()) return;
   ensureAudioContext();
   if (/^[A-Z]$/.test(key)) typeCharacter(key);
   if (key === "Space") typeCharacter(" ");
@@ -553,6 +692,22 @@ function handleVirtualKey(key) {
 function handlePhysicalKey(event) {
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   ensureAudioContext();
+
+  if (isAllCountriesOpen()) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeAllCountries();
+    }
+    return;
+  }
+
+  if (isSettingsOpen()) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSettings();
+    }
+    return;
+  }
 
   if (els.wrongOverlay.hidden === false && event.key === "Enter") {
     event.preventDefault();
@@ -745,22 +900,92 @@ function registerServiceWorker() {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+function warmFlagCache() {
+  if (!shouldWarmCaches() || !("caches" in window)) return;
+
+  const orderedCountries = [
+    ...activeCountries(),
+    ...preparedCountries.filter((country) => !activeCountries().some((active) => active.code === country.code)),
+  ];
+  const seen = new Set();
+  const urls = orderedCountries
+    .map(flagUrl)
+    .filter((url) => {
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
+
+  const start = () => {
+    caches.open(FLAG_CACHE_NAME)
+      .then((cache) => cacheFlagBatch(cache, urls, 0))
+      .catch(() => {});
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(start, { timeout: 2500 });
+  } else {
+    window.setTimeout(start, 1200);
+  }
+}
+
+function shouldWarmCaches() {
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  return window.location.protocol === "https:" && !localHosts.has(window.location.hostname);
+}
+
+function cacheFlagBatch(cache, urls, index) {
+  const batch = urls.slice(index, index + 8);
+  if (!batch.length) return Promise.resolve();
+
+  return Promise.all(batch.map((url) => cacheFlag(cache, url)))
+    .then(() => new Promise((resolve) => {
+      window.setTimeout(resolve, 120);
+    }))
+    .then(() => cacheFlagBatch(cache, urls, index + batch.length));
+}
+
+function cacheFlag(cache, url) {
+  return cache.match(url).then((cached) => {
+    if (cached) return undefined;
+
+    return fetch(url, { mode: "no-cors", cache: "force-cache" })
+      .then((response) => cache.put(url, response))
+      .catch(() => undefined);
+  });
+}
+
 els.flagImage.addEventListener("load", () => {
   els.flagImage.classList.add("is-loaded");
 });
 
+els.settingsButton.addEventListener("click", toggleSettings);
+els.settingsPanel.addEventListener("click", (event) => {
+  event.stopPropagation();
+});
+document.addEventListener("click", (event) => {
+  if (!isSettingsOpen()) return;
+  if (els.settingsPanel.contains(event.target) || els.settingsButton.contains(event.target)) return;
+  closeSettings();
+});
+els.countryModeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    if (input.checked) changeCountryMode(input.value);
+  });
+});
+els.hintModeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    if (input.checked) settings.hintMode = input.value;
+  });
+});
+els.showAllButton.addEventListener("click", showAllCountries);
+els.settingsResetButton.addEventListener("click", startNewGame);
+els.allCountriesCloseButton.addEventListener("click", closeAllCountries);
 els.backButton.addEventListener("click", previousCountry);
 els.hintButton.addEventListener("click", showHint);
 els.skipButton.addEventListener("click", skipCountry);
-els.scoreButton.addEventListener("click", () => {
-  els.resetOverlay.hidden = false;
-});
 els.showButton.addEventListener("click", showAnswer);
 els.againButton.addEventListener("click", guessAgain);
-els.cancelResetButton.addEventListener("click", () => {
-  els.resetOverlay.hidden = true;
-});
-els.confirmResetButton.addEventListener("click", resetScore);
 window.addEventListener("keydown", handlePhysicalKey);
 window.addEventListener("resize", fitResolverText);
 
@@ -769,3 +994,4 @@ updateScore();
 refillDeck();
 nextCountry();
 registerServiceWorker();
+warmFlagCache();

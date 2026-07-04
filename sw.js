@@ -1,4 +1,6 @@
-const CACHE_NAME = "flag-game-v2";
+const CACHE_NAME = "flag-game-v3";
+const FLAG_CACHE_NAME = "flag-game-flags-v1";
+const PRESERVED_CACHES = new Set([CACHE_NAME, FLAG_CACHE_NAME]);
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const IS_LOCAL_DEV = LOCAL_HOSTS.has(self.location.hostname);
 const APP_SHELL = [
@@ -27,7 +29,7 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key.startsWith("flag-game-") && (IS_LOCAL_DEV || key !== CACHE_NAME))
+          .filter((key) => key.startsWith("flag-game-") && (IS_LOCAL_DEV || !PRESERVED_CACHES.has(key)))
           .map((key) => caches.delete(key))
       ))
       .then(() => (IS_LOCAL_DEV ? self.registration.unregister() : undefined))
