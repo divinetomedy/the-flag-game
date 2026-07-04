@@ -43,10 +43,14 @@ button {
 
 .app {
   display: grid;
-  grid-template-rows: minmax(36px, 6svh) minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100vh;
   height: 100svh;
+  height: 100dvh;
+  max-height: 100dvh;
   margin: 0 auto;
   max-width: 760px;
+  min-height: 0;
   background: var(--panel);
 }
 
@@ -334,8 +338,8 @@ button {
 
 @media (min-width: 821px) and (pointer: fine) {
   .app {
-    grid-template-rows: 44px minmax(0, 1fr) auto;
-    height: min(100svh, 920px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: min(100dvh, 920px);
     border-right: 1px solid var(--line);
     border-left: 1px solid var(--line);
   }
