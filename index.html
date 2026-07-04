@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1220">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Flag Game">
+    <title>Flag Game</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css?v=6">
+  </head>
+  <body>
+    <main class="app" aria-live="polite">
+      <section class="resolver" aria-label="Current guess">
+        <div id="resolvedName" class="resolved-name" aria-live="polite"></div>
+      </section>
+
+      <section class="flag-stage" aria-label="Flag to identify">
+        <img id="flagImage" class="flag-image" alt="Mystery country flag">
+        <div id="hintBadge" class="hint-badge" aria-hidden="true"></div>
+        <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
+      </section>
+
+      <section class="controls" aria-label="Game controls">
+        <button id="backButton" class="control-button" type="button">Back</button>
+        <button id="scoreButton" class="score-button" type="button" aria-label="Reset score">0/0</button>
+        <div class="right-controls">
+          <button id="hintButton" class="control-button" type="button">Hint</button>
+          <button id="skipButton" class="control-button" type="button">Skip</button>
+        </div>
+      </section>
+
+      <section id="keyboard" class="keyboard" aria-label="On-screen keyboard"></section>
+    </main>
+
+    <div id="wrongOverlay" class="overlay" hidden>
+      <div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="wrongTitle">
+        <h1 id="wrongTitle">BONG!</h1>
+        <div class="overlay-actions">
+          <button id="showButton" type="button">Show</button>
+          <button id="againButton" type="button">Guess again</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resetOverlay" class="overlay" hidden>
+      <div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+        <h1 id="resetTitle">Reset score?</h1>
+        <div class="overlay-actions">
+          <button id="cancelResetButton" type="button">Cancel</button>
+          <button id="confirmResetButton" type="button">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js?v=7" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Flag Game",
+  "short_name": "Flags",
+  "description": "A mobile-first flag guessing game that prioritizes 2026 World Cup teams.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#0b1220",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
