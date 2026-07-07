@@ -9,42 +9,39 @@
     <title>Flag Game</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=9">
+    <link rel="stylesheet" href="styles.css?v=17">
   </head>
   <body>
     <main class="app" aria-live="polite">
       <section class="resolver" aria-label="Current guess">
         <div id="resolvedName" class="resolved-name" aria-live="polite"></div>
-        <button id="settingsButton" class="settings-button" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">&#9881;</button>
+      </section>
+
+      <section class="flag-stage" aria-label="Flag to identify">
+        <img id="flagImage" class="flag-image" alt="Mystery country flag">
+        <div id="hintBadge" class="hint-badge" aria-hidden="true">
+          <div id="hintMain" class="hint-main"></div>
+          <div id="hintSub" class="hint-sub"></div>
+        </div>
+        <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
+      </section>
+
+      <section class="controls" aria-label="Game controls">
+        <button id="scoreButton" class="score-button" type="button" aria-label="Score 0 right out of 0" disabled>0/0</button>
+        <button id="settingsButton" class="control-button settings-button" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">&#9881;</button>
         <div id="settingsPanel" class="settings-panel" hidden>
           <fieldset>
             <legend>Countries</legend>
             <label><input type="radio" name="countryMode" value="worldCup" checked> World Cup 2026</label>
             <label><input type="radio" name="countryMode" value="all"> All Countries</label>
           </fieldset>
-          <fieldset>
-            <legend>Hint</legend>
-            <label><input type="radio" name="hintMode" value="firstLetter" checked> First Letter</label>
-            <label><input type="radio" name="hintMode" value="twoLetter"> 2-Letter Code</label>
-            <label><input type="radio" name="hintMode" value="threeLetter"> 3-Letter Code</label>
-          </fieldset>
           <button id="showAllButton" class="settings-action-button" type="button">Show all</button>
           <button id="settingsResetButton" class="settings-reset-button" type="button">New game</button>
         </div>
-      </section>
-
-      <section class="flag-stage" aria-label="Flag to identify">
-        <img id="flagImage" class="flag-image" alt="Mystery country flag">
-        <div id="hintBadge" class="hint-badge" aria-hidden="true"></div>
-        <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
-      </section>
-
-      <section class="controls" aria-label="Game controls">
-        <button id="backButton" class="control-button" type="button">Back</button>
-        <button id="scoreButton" class="score-button" type="button" aria-label="Score 0 right out of 0" disabled>0/0</button>
         <div class="right-controls">
+          <button id="backButton" class="control-button arrow-button" type="button" aria-label="Back">&larr;</button>
+          <button id="skipButton" class="control-button arrow-button" type="button" aria-label="Skip">&rarr;</button>
           <button id="hintButton" class="control-button" type="button">Hint</button>
-          <button id="skipButton" class="control-button" type="button">Skip</button>
         </div>
       </section>
 
@@ -71,6 +68,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=13" type="module"></script>
+    <script src="app.js?v=17" type="module"></script>
   </body>
 </html>

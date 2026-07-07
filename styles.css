@@ -59,7 +59,7 @@ button {
   display: grid;
   align-items: center;
   min-height: 36px;
-  padding: max(6px, env(safe-area-inset-top)) 48px 6px;
+  padding: max(6px, env(safe-area-inset-top)) 12px 6px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -82,17 +82,11 @@ button {
 }
 
 .settings-button {
-  position: absolute;
-  right: 8px;
-  top: max(4px, env(safe-area-inset-top));
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 30px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink);
-  font-size: 20px;
+  width: var(--control-width);
+  min-width: var(--control-width);
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -102,8 +96,8 @@ button {
 
 .settings-panel {
   position: absolute;
-  top: calc(100% + 6px);
-  right: 8px;
+  left: calc(12px + var(--score-width) + 10px);
+  bottom: calc(100% + 6px);
   z-index: 20;
   display: grid;
   gap: 12px;
@@ -159,7 +153,7 @@ button {
   font-weight: 800;
 }
 
-.settings-action-button {
+.settings-reset-button {
   background: #101828;
   color: #ffffff;
 }
@@ -179,9 +173,12 @@ button {
 .flag-image {
   display: block;
   width: 100%;
+  height: 100%;
+  max-width: 100%;
   max-height: 100%;
   filter: drop-shadow(0 18px 22px rgb(0 0 0 / 34%)) drop-shadow(0 4px 5px rgb(0 0 0 / 28%));
   object-fit: contain;
+  object-position: center;
   opacity: 0;
   transition: opacity 140ms ease;
 }
@@ -194,12 +191,10 @@ button {
   position: absolute;
   inset: 0;
   display: grid;
-  align-items: center;
+  align-content: center;
   justify-items: center;
   pointer-events: none;
   color: #ffffff;
-  font-size: 112px;
-  font-weight: 900;
   letter-spacing: 0;
   opacity: 0;
   text-shadow: 0 4px 20px rgb(0 0 0 / 52%), 0 0 1px rgb(0 0 0 / 90%);
@@ -212,6 +207,32 @@ button {
   transform: scale(1);
 }
 
+.hint-main {
+  font-size: 112px;
+  font-weight: 900;
+  line-height: 0.92;
+  text-align: center;
+}
+
+.hint-sub {
+  min-height: 22px;
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+}
+
+.hint-badge.is-full-name {
+  padding: 0 14px;
+}
+
+.hint-badge.is-full-name .hint-main {
+  max-width: 100%;
+  font-size: 44px;
+  line-height: 1.05;
+}
+
 .celebration-canvas {
   position: absolute;
   inset: 0;
@@ -221,10 +242,12 @@ button {
 }
 
 .controls {
-  --control-width: clamp(54px, 17vw, 78px);
+  --control-width: clamp(44px, 13vw, 60px);
+  --score-width: 82px;
 
+  position: relative;
   display: grid;
-  grid-template-columns: var(--control-width) minmax(0, 1fr) auto minmax(0, 1fr) calc(var(--control-width) * 2 + 10px);
+  grid-template-columns: auto var(--control-width) minmax(0, 1fr) calc(var(--control-width) * 2 + 68px + 20px);
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -234,19 +257,31 @@ button {
 
 .right-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: var(--control-width) var(--control-width) 68px;
   gap: 10px;
-  grid-column: 5;
+  grid-column: 4;
   justify-self: end;
   width: 100%;
 }
 
-#backButton {
-  grid-column: 1;
+#hintButton {
+  min-width: 68px;
+  font-variant-numeric: tabular-nums;
 }
 
 .score-button {
-  grid-column: 3;
+  min-width: var(--score-width);
+  grid-column: 1;
+  justify-self: start;
+}
+
+.controls .settings-button {
+  grid-column: 2;
+}
+
+.arrow-button {
+  font-size: 22px;
+  line-height: 1;
 }
 
 .control-button,
@@ -268,7 +303,7 @@ button {
 }
 
 .score-button {
-  min-width: 82px;
+  min-width: var(--score-width);
   padding: 0 14px;
   background: #101828;
   color: #ffffff;

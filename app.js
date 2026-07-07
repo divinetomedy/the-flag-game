@@ -221,6 +221,8 @@ const els = {
   resolvedName: document.querySelector("#resolvedName"),
   flagImage: document.querySelector("#flagImage"),
   hintBadge: document.querySelector("#hintBadge"),
+  hintMain: document.querySelector("#hintMain"),
+  hintSub: document.querySelector("#hintSub"),
   celebrationCanvas: document.querySelector("#celebrationCanvas"),
   settingsButton: document.querySelector("#settingsButton"),
   settingsPanel: document.querySelector("#settingsPanel"),
@@ -230,7 +232,6 @@ const els = {
   allCountriesList: document.querySelector("#allCountriesList"),
   allCountriesCloseButton: document.querySelector("#allCountriesCloseButton"),
   countryModeInputs: document.querySelectorAll("input[name='countryMode']"),
-  hintModeInputs: document.querySelectorAll("input[name='hintMode']"),
   backButton: document.querySelector("#backButton"),
   scoreButton: document.querySelector("#scoreButton"),
   hintButton: document.querySelector("#hintButton"),
@@ -249,11 +250,11 @@ let right = 0;
 let wrong = 0;
 let answerTimer = 0;
 let hintTimer = 0;
+let hintLevel = 0;
 let celebrationFrame = 0;
 let audioContext = null;
 let settings = {
   countryMode: "worldCup",
-  hintMode: "firstLetter",
 };
 
 const preparedCountries = COUNTRIES.map((country) => ({
@@ -318,6 +319,8 @@ function nextCountry() {
   if (!deck.length) refillDeck();
   current = deck.shift();
   guess = "";
+  hintLevel = 0;
+  updateHintButton();
   hideAnswer();
   hideHint();
   updateResolver();
@@ -336,6 +339,8 @@ function previousCountry() {
   if (current) deck.unshift(current);
   current = history.pop();
   guess = "";
+  hintLevel = 0;
+  updateHintButton();
   hideAnswer();
   hideHint();
   updateResolver();
@@ -508,7 +513,12 @@ function hideAnswer() {
 
 function showHint() {
   window.clearTimeout(hintTimer);
-  els.hintBadge.textContent = hintText();
+  hintLevel = Math.min(hintLevel + 1, 4);
+  updateHintButton();
+  const hint = hintText();
+  els.hintMain.textContent = hint.main;
+  els.hintSub.textContent = hint.sub;
+  els.hintBadge.classList.toggle("is-full-name", hintLevel >= 4);
   els.hintBadge.setAttribute("aria-hidden", "false");
   els.hintBadge.classList.add("is-visible");
   hintTimer = window.setTimeout(hideHint, 1000);
@@ -517,6 +527,7 @@ function showHint() {
 function hideHint() {
   window.clearTimeout(hintTimer);
   els.hintBadge.classList.remove("is-visible");
+  els.hintBadge.classList.remove("is-full-name");
   els.hintBadge.setAttribute("aria-hidden", "true");
 }
 
@@ -537,6 +548,8 @@ function startNewGame() {
   history = [];
   current = null;
   guess = "";
+  hintLevel = 0;
+  updateHintButton();
   hideAnswer();
   hideHint();
   closeSettings();
@@ -544,15 +557,36 @@ function startNewGame() {
 }
 
 function hintText() {
-  if (settings.hintMode === "firstLetter") {
-    return current.name.slice(0, 1).toUpperCase();
+  if (hintLevel === 1) {
+    return {
+      main: current.name.slice(0, 1).toUpperCase(),
+      sub: "",
+    };
   }
 
-  if (settings.hintMode === "twoLetter") {
-    return twoLetterCode(current);
+  if (hintLevel === 2) {
+    return {
+      main: twoLetterCode(current),
+      sub: "Flag Code",
+    };
   }
 
-  return current.code;
+  if (hintLevel === 3) {
+    return {
+      main: current.code,
+      sub: "FIFA Code",
+    };
+  }
+
+  return {
+    main: current.name,
+    sub: "",
+  };
+}
+
+function updateHintButton() {
+  const labels = ["Hint 1", "Hint 2", "Hint 3", "Hint X", "Hint X"];
+  els.hintButton.textContent = labels[hintLevel];
 }
 
 function twoLetterCode(country) {
@@ -973,11 +1007,6 @@ els.countryModeInputs.forEach((input) => {
     if (input.checked) changeCountryMode(input.value);
   });
 });
-els.hintModeInputs.forEach((input) => {
-  input.addEventListener("change", () => {
-    if (input.checked) settings.hintMode = input.value;
-  });
-});
 els.showAllButton.addEventListener("click", showAllCountries);
 els.settingsResetButton.addEventListener("click", startNewGame);
 els.allCountriesCloseButton.addEventListener("click", closeAllCountries);
@@ -991,6 +1020,7 @@ window.addEventListener("resize", fitResolverText);
 
 buildKeyboard();
 updateScore();
+updateHintButton();
 refillDeck();
 nextCountry();
 registerServiceWorker();
